@@ -92,35 +92,103 @@ Clear BG is a production-ready, full-stack application for removing backgrounds 
 
 ## Architecture
 
+### System Overview
+
+```mermaid
+flowchart TB
+    subgraph Clients["🖥️ Client Layer"]
+        Web["Web Browser<br/>(React UI)"]
+        CLI["CLI / Scripts<br/>(Python)"]
+        Ext["Third-party<br/>Integrations"]
+    end
+
+    subgraph API["⚡ FastAPI Application"]
+        Routes["Routes"]
+        Validation["Validation"]
+        CORS["CORS"]
+    end
+
+    subgraph Engine["🧠 Inference Engine"]
+        direction LR
+        Pre["Pre-process<br/>(Pillow)"]
+        Cache["Session<br/>Cache"]
+        ONNX["ONNX Runtime<br/>(CPU / GPU)"]
+        Post["Post-process<br/>(Alpha Matting)"]
+        Pre --> Cache --> ONNX --> Post
+    end
+
+    Models[("📦 Model Store<br/>~/.u2net/")]
+    Storage[("💾 Uploads /<br/>Outputs")]
+
+    Web -->|HTTP/JSON| API
+    CLI -->|HTTP/JSON| API
+    Ext -->|HTTP/JSON| API
+    API --> Engine
+    Engine <--> Models
+    Engine <--> Storage
+
+    classDef client fill:#0066FF,stroke:#00D9FF,color:#fff
+    classDef api fill:#009688,stroke:#00D9FF,color:#fff
+    classDef engine fill:#6B46C1,stroke:#00D9FF,color:#fff
+    classDef store fill:#1F2937,stroke:#00D9FF,color:#fff
+    class Web,CLI,Ext client
+    class Routes,Validation,CORS api
+    class Pre,Cache,ONNX,Post engine
+    class Models,Storage store
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                          Client Layer                            │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
-│  │   Web Browser   │  │  CLI / Scripts  │  │  Third-party    │  │
-│  │   (React UI)    │  │   (Python)      │  │  Integrations   │  │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  │
-└───────────┼────────────────────┼────────────────────┼───────────┘
-            │                    │                    │
-            └────────────────────┴────────────────────┘
-                                 │ HTTP/JSON
-            ┌────────────────────▼─────────────────────┐
-            │          FastAPI Application             │
-            │  ┌───────────────────────────────────┐   │
-            │  │  Routes  │  Validation  │  CORS   │   │
-            │  └───────────────────────────────────┘   │
-            └────────────────────┬─────────────────────┘
-                                 │
-            ┌────────────────────▼─────────────────────┐
-            │          Inference Engine                │
-            │  ┌─────────────┐    ┌─────────────────┐  │
-            │  │  Session    │ →  │  ONNX Runtime   │  │
-            │  │  Cache      │    │  (CPU/GPU)      │  │
-            │  └─────────────┘    └─────────────────┘  │
-            │  ┌─────────────┐    ┌─────────────────┐  │
-            │  │ Pre-process │ →  │  Post-process   │  │
-            │  │  (Pillow)   │    │  (Alpha Matting)│  │
-            │  └─────────────┘    └─────────────────┘  │
-            └──────────────────────────────────────────┘
+
+### Request Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User / Client
+    participant A as FastAPI Server
+    participant V as Validator
+    participant E as Inference Engine
+    participant C as Session Cache
+    participant O as ONNX Runtime
+
+    U->>A: POST /remove (image, model, options)
+    A->>V: Validate MIME, size, params
+    V-->>A: ✓ Valid
+    A->>E: process_image(...)
+    E->>C: get_session(model)
+    alt Model cached
+        C-->>E: Return session
+    else Cold start
+        C->>O: Load ONNX model
+        O-->>C: Session ready
+        C-->>E: Return session
+    end
+    E->>O: Run inference
+    O-->>E: Mask tensor
+    E->>E: Apply alpha matting
+    E-->>A: PNG with transparency
+    A-->>U: 200 OK (image/png)
+```
+
+### Project Layout
+
+```mermaid
+graph LR
+    Root["📁 Clear BG"]
+    Root --> FE["📂 frontend/<br/>React + Vite + TS"]
+    Root --> BE["📂 backend/<br/>FastAPI + ONNX"]
+    Root --> Tests["📂 tests-pw/<br/>Playwright E2E"]
+
+    FE --> FE_src["src/"]
+    FE --> FE_pub["public/"]
+
+    BE --> BE_api["api/<br/>REST routes"]
+    BE --> BE_core["core/<br/>config + engine"]
+    BE --> BE_cli["cli/<br/>command-line"]
+    BE --> BE_io["uploads/ • outputs/"]
+
+    classDef root fill:#00D9FF,stroke:#0066FF,color:#000,font-weight:bold
+    classDef folder fill:#1F2937,stroke:#00D9FF,color:#fff
+    class Root root
+    class FE,BE,Tests,FE_src,FE_pub,BE_api,BE_core,BE_cli,BE_io folder
 ```
 
 ---
