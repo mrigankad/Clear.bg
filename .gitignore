@@ -41,6 +41,8 @@ backend/uploads/
 /plan.md
 /prompts.md
 /ux-plan.md
+/prompt-images/
+/uireferences/
 
 # E2E Testing - Generated artifacts (ignore these)
 # Playwright
