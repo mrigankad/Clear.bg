@@ -27,3 +27,41 @@ Thumbs.db
 # Project specific
 backend/outputs/
 backend/uploads/
+
+# Generated/scratch images at root (ignore loose images, keep branding assets)
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+!Clear BG.png
+!assets/**
+
+# Planning & scratch docs (keep README)
+/list.md
+/plan.md
+/prompts.md
+/ux-plan.md
+
+# E2E Testing - Generated artifacts (ignore these)
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+frontend/.auth/
+frontend/.playwright/
+frontend/tests-pw/screenshots/
+frontend/tests-pw/videos/
+frontend/tests-pw/traces/
+
+# Cypress
+frontend/cypress/videos/
+frontend/cypress/screenshots/
+
+# Test coverage
+frontend/coverage-e2e/
+backend/.pytest_cache/
+backend/htmlcov/
+
+# E2E Testing - Source code (commit these - examples)
+# frontend/tests-pw/
+# frontend/e2e/
+# backend/tests/
